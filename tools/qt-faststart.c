@@ -29,11 +29,18 @@
 #include <inttypes.h>
 #include <string.h>
 
-#ifdef __MINGW32__
+#ifdef __MINGW32CE__
+#define fseeko(x, y, z) fseek(x, y, z)
+#define ftello(x)       ftell(x)
+#elif defined(__MINGW32__)
+#undef fseeko
 #define fseeko(x, y, z) fseeko64(x, y, z)
+#undef ftello
 #define ftello(x)       ftello64(x)
 #elif defined(_WIN32)
+#undef fseeko
 #define fseeko(x, y, z) _fseeki64(x, y, z)
+#undef ftello
 #define ftello(x)       _ftelli64(x)
 #endif
 

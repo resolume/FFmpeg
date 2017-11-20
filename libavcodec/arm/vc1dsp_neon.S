@@ -24,6 +24,8 @@
 #include "libavutil/arm/asm.S"
 #include "neon.S"
 
+#include "config.h"
+
 @ Transpose rows into columns of a matrix of 16-bit elements. For 4x4, pass
 @ double-word registers, for 8x4, pass quad-word registers.
 .macro transpose16 r0, r1, r2, r3
@@ -424,7 +426,7 @@ function ff_vc1_inv_trans_8x8_neon, export=1
         bx              lr
 endfunc
 
-@ (uint8_t *dest [r0], int linesize [r1], int16_t *block [r2])
+@ (uint8_t *dest [r0], ptrdiff_t stride [r1], int16_t *block [r2])
 function ff_vc1_inv_trans_8x4_neon, export=1
         vld1.64         {q0-q1}, [r2,:128]!     @ load 8 * 4 * 2 = 64 bytes / 16 bytes per quad = 4 quad registers
         vld1.64         {q2-q3}, [r2,:128]
@@ -509,7 +511,7 @@ function ff_vc1_inv_trans_8x4_neon, export=1
         bx              lr
 endfunc
 
-@ (uint8_t *dest [r0], int linesize [r1], int16_t *block [r2])
+@ (uint8_t *dest [r0], ptrdiff_t stride [r1], int16_t *block [r2])
 function ff_vc1_inv_trans_4x8_neon, export=1
         mov             r12, #(8 * 2)  @ 8 elements per line, each element 2 bytes
         vld4.16         {d0[],  d2[],  d4[],  d6[]},  [r2,:64], r12     @ read each column into a q register
@@ -591,7 +593,7 @@ endfunc
         vshr.s16        q1,  q1,  #\rshift      @ dst[3,1] >>= rshift
 .endm
 
-@ (uint8_t *dest [r0], int linesize [r1], int16_t *block [r2])
+@ (uint8_t *dest [r0], ptrdiff_t stride [r1], int16_t *block [r2])
 function ff_vc1_inv_trans_4x4_neon, export=1
         mov             r12, #(8 * 2)  @ 8 elements per line, each element 2 bytes
         vld4.16         {d0[],  d1[],  d2[],  d3[]},  [r2,:64], r12     @ read each column into a register
@@ -661,6 +663,7 @@ function ff_vc1_inv_trans_4x4_neon, export=1
         bx              lr
 endfunc
 
+#if HAVE_AS_DN_DIRECTIVE
 @ The absolute value of multiplication constants from vc1_mspel_filter and vc1_mspel_{ver,hor}_filter_16bits.
 @ The sign is embedded in the code below that carries out the multiplication (mspel_filter{,.16}).
 #define MSPEL_MODE_1_MUL_CONSTANTS  4 53 18 3
@@ -984,6 +987,7 @@ PUT_VC1_MSPEL_MC_V_ONLY(2)
 PUT_VC1_MSPEL_MC_V_ONLY(3)
 
 #undef PUT_VC1_MSPEL_MC_V_ONLY
+#endif
 
 function ff_put_pixels8x8_neon, export=1
         vld1.64         {d0}, [r1], r2

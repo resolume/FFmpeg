@@ -33,7 +33,7 @@
 
 #if CONFIG_OPENCL
 
-typedef struct {
+typedef struct UnsharpOpenclContext {
     cl_command_queue command_queue;
     cl_program program;
     cl_kernel kernel_default;
@@ -41,6 +41,10 @@ typedef struct {
     cl_kernel kernel_chroma;
     cl_mem cl_luma_mask;
     cl_mem cl_chroma_mask;
+    cl_mem cl_luma_mask_x;
+    cl_mem cl_chroma_mask_x;
+    cl_mem cl_luma_mask_y;
+    cl_mem cl_chroma_mask_y;
     int in_plane_size[8];
     int out_plane_size[8];
     int plane_num;

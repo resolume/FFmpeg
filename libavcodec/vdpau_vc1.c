@@ -24,6 +24,7 @@
 #include <vdpau/vdpau.h>
 
 #include "avcodec.h"
+#include "hwaccel.h"
 #include "vc1.h"
 #include "vdpau.h"
 #include "vdpau_internal.h"
@@ -113,6 +114,27 @@ static int vdpau_vc1_decode_slice(AVCodecContext *avctx,
     return 0;
 }
 
+static int vdpau_vc1_init(AVCodecContext *avctx)
+{
+    VdpDecoderProfile profile;
+
+    switch (avctx->profile) {
+    case FF_PROFILE_VC1_SIMPLE:
+        profile = VDP_DECODER_PROFILE_VC1_SIMPLE;
+        break;
+    case FF_PROFILE_VC1_MAIN:
+        profile = VDP_DECODER_PROFILE_VC1_MAIN;
+        break;
+    case FF_PROFILE_VC1_ADVANCED:
+        profile = VDP_DECODER_PROFILE_VC1_ADVANCED;
+        break;
+    default:
+        return AVERROR(ENOTSUP);
+    }
+
+    return ff_vdpau_common_init(avctx, profile, avctx->level);
+}
+
 #if CONFIG_WMV3_VDPAU_HWACCEL
 AVHWAccel ff_wmv3_vdpau_hwaccel = {
     .name           = "wm3_vdpau",
@@ -122,7 +144,11 @@ AVHWAccel ff_wmv3_vdpau_hwaccel = {
     .start_frame    = vdpau_vc1_start_frame,
     .end_frame      = ff_vdpau_mpeg_end_frame,
     .decode_slice   = vdpau_vc1_decode_slice,
-    .priv_data_size = sizeof(struct vdpau_picture_context),
+    .frame_priv_data_size = sizeof(struct vdpau_picture_context),
+    .init           = vdpau_vc1_init,
+    .uninit         = ff_vdpau_common_uninit,
+    .priv_data_size = sizeof(VDPAUContext),
+    .caps_internal  = HWACCEL_CAP_ASYNC_SAFE,
 };
 #endif
 
@@ -134,5 +160,9 @@ AVHWAccel ff_vc1_vdpau_hwaccel = {
     .start_frame    = vdpau_vc1_start_frame,
     .end_frame      = ff_vdpau_mpeg_end_frame,
     .decode_slice   = vdpau_vc1_decode_slice,
-    .priv_data_size = sizeof(struct vdpau_picture_context),
+    .frame_priv_data_size = sizeof(struct vdpau_picture_context),
+    .init           = vdpau_vc1_init,
+    .uninit         = ff_vdpau_common_uninit,
+    .priv_data_size = sizeof(VDPAUContext),
+    .caps_internal  = HWACCEL_CAP_ASYNC_SAFE,
 };

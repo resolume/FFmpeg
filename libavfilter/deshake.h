@@ -24,8 +24,8 @@
 
 #include "config.h"
 #include "avfilter.h"
-#include "libavcodec/dsputil.h"
 #include "transform.h"
+#include "libavutil/pixelutils.h"
 #if CONFIG_OPENCL
 #include "libavutil/opencl.h"
 #endif
@@ -37,25 +37,25 @@ enum SearchMethod {
     SEARCH_COUNT
 };
 
-typedef struct {
+typedef struct IntMotionVector {
     int x;             ///< Horizontal shift
     int y;             ///< Vertical shift
 } IntMotionVector;
 
-typedef struct {
+typedef struct MotionVector {
     double x;             ///< Horizontal shift
     double y;             ///< Vertical shift
 } MotionVector;
 
-typedef struct {
-    MotionVector vector;  ///< Motion vector
+typedef struct Transform {
+    MotionVector vec;     ///< Motion vector
     double angle;         ///< Angle of rotation
     double zoom;          ///< Zoom percentage
 } Transform;
 
 #if CONFIG_OPENCL
 
-typedef struct {
+typedef struct DeshakeOpenclContext {
     cl_command_queue command_queue;
     cl_program program;
     cl_kernel kernel_luma;
@@ -71,8 +71,13 @@ typedef struct {
 
 #endif
 
-typedef struct {
+#define MAX_R 64
+
+typedef struct DeshakeContext {
     const AVClass *class;
+    int counts[2*MAX_R+1][2*MAX_R+1]; /// < Scratch buffer for motion search
+    double *angles;            ///< Scratch buffer for block angles
+    unsigned angles_size;
     AVFrame *ref;              ///< Previous frame
     int rx;                    ///< Maximum horizontal shift
     int ry;                    ///< Maximum vertical shift
@@ -80,8 +85,7 @@ typedef struct {
     int blocksize;             ///< Size of blocks to compare
     int contrast;              ///< Contrast threshold
     int search;                ///< Motion search method
-    AVCodecContext *avctx;
-    DSPContext c;              ///< Context providing optimized SAD methods
+    av_pixelutils_sad_fn sad;  ///< Sum of the absolute difference function
     Transform last;            ///< Transform from last frame
     int refcount;              ///< Number of reference frames (defines averaging window)
     FILE *fp;
