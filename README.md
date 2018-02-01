@@ -49,4 +49,4 @@ avoided because they are not part of our review process and will be ignored.
 
 ## RESOLUME build information
 
---arch=x86_64 --enable-runtime-cpudetect --enable-pthreads --enable-shared --disable-debug --enable-ffplay --enable-ffprobe --enable-ffserver --enable-swscale --disable-swresample --disable-postproc --disable-avfilter --disable-avdevice 
+--arch=x86_64 --enable-runtime-cpudetect --enable-pthreads --enable-shared --disable-debug --enable-ffplay --enable-ffprobe --enable-ffserver --enable-swscale --disable-swresample --disable-postproc --disable-avfilter --disable-avdevice  --disable-debug
