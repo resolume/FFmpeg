@@ -93,6 +93,17 @@ typedef struct AVBufferRef {
     int      size;
 } AVBufferRef;
 
+#if defined(_WIN32)
+	#define FFAPI __stdcall
+#else
+	#define FFAPI
+#endif
+
+typedef void* (FFAPI *PFNBufferAlloc)( int size );
+typedef void (FFAPI *PFNBufferDealloc)( void* buffer );
+void av_set_buffer_alloc_func( PFNBufferAlloc externalAlloc );
+void av_set_buffer_dealloc_func( PFNBufferDealloc externalDealloc );
+
 /**
  * Allocate an AVBuffer of the given size using av_malloc().
  *

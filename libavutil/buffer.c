@@ -59,9 +59,24 @@ AVBufferRef *av_buffer_create(uint8_t *data, int size,
     return ref;
 }
 
+PFNBufferAlloc externalAllocFunc = NULL;
+PFNBufferDealloc externalDeallocFunc = NULL;
+
+void av_set_buffer_alloc_func( PFNBufferAlloc externalAlloc )
+{
+	externalAllocFunc = externalAlloc;
+}
+void av_set_buffer_dealloc_func( PFNBufferDealloc externalDealloc )
+{
+	externalDeallocFunc = externalDealloc;
+}
+
 void av_buffer_default_free(void *opaque, uint8_t *data)
 {
-    av_free(data);
+	if( externalDeallocFunc != NULL )
+		externalDeallocFunc( data );
+	else
+		av_free(data);
 }
 
 AVBufferRef *av_buffer_alloc(int size)
@@ -69,7 +84,10 @@ AVBufferRef *av_buffer_alloc(int size)
     AVBufferRef *ret = NULL;
     uint8_t    *data = NULL;
 
-    data = av_malloc(size);
+	if( externalAllocFunc != NULL )
+		data = externalAllocFunc( size );
+	if( data == NULL )
+		data = av_malloc(size);
     if (!data)
         return NULL;
 
