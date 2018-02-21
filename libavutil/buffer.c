@@ -72,9 +72,10 @@ void av_buffer_default_free(void *opaque, uint8_t *data)
 {
 	av_free(data);
 }
+void av_buffer_external_free(void *opaque, uint8_t *data);
 void av_buffer_external_free(void *opaque, uint8_t *data)
 {
-	if( externalDeallocFunc !== NULL )
+	if( externalDeallocFunc != NULL )
 		externalDeallocFunc( data );
 }
 
