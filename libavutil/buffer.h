@@ -93,6 +93,29 @@ typedef struct AVBufferRef {
     int      size;
 } AVBufferRef;
 
+#if defined(_WIN32)
+	#define FFAPI __stdcall
+#else
+	#define FFAPI
+#endif
+
+typedef void* (FFAPI *PFNBufferAlloc)( int size );
+typedef void (FFAPI *PFNBufferDealloc)( void* buffer );
+/**
+ * Set allocation functions that can be used to externally manage buffer allocations.
+ * During regular playback buffers are continuously being allocated and deallocated. In high performance
+ * applications this becomes a problem. When multiple files are playing at the same time on different threads
+ * these allocations interlock with eachother causing performance loss due to reduced paralellism.
+ * To remedy this these applications may set these allocation/deallocation functions which it can use to prevent
+ * this behaviour. It could for example implement a pool allocator from which it will source the buffers.
+ *
+ * @param externalAlloc   The function that will be called when a new buffer is required. This function can return
+ *                        NULL if it does not take care of allocating buffers of the provided size. In this case FFMPeg will
+ *                        fall back to it's own allocation function.
+ * @param externalDealloc The function that will be called when a buffer is to be deallocated.
+ */
+void av_set_buffer_alloc_free_funcs( PFNBufferAlloc externalAlloc, PFNBufferDealloc externalDealloc );
+
 /**
  * Allocate an AVBuffer of the given size using av_malloc().
  *

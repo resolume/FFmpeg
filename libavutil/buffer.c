@@ -59,9 +59,24 @@ AVBufferRef *av_buffer_create(uint8_t *data, int size,
     return ref;
 }
 
+PFNBufferAlloc externalAllocFunc = NULL;
+PFNBufferDealloc externalDeallocFunc = NULL;
+
+void av_set_buffer_alloc_free_funcs( PFNBufferAlloc externalAlloc, PFNBufferDealloc externalDealloc )
+{
+	externalAllocFunc = externalAlloc;
+	externalDeallocFunc = externalDealloc;
+}
+
 void av_buffer_default_free(void *opaque, uint8_t *data)
 {
-    av_free(data);
+	av_free(data);
+}
+void av_buffer_external_free(void *opaque, uint8_t *data);
+void av_buffer_external_free(void *opaque, uint8_t *data)
+{
+	if( externalDeallocFunc != NULL )
+		externalDeallocFunc( data );
 }
 
 AVBufferRef *av_buffer_alloc(int size)
@@ -69,13 +84,31 @@ AVBufferRef *av_buffer_alloc(int size)
     AVBufferRef *ret = NULL;
     uint8_t    *data = NULL;
 
-    data = av_malloc(size);
-    if (!data)
-        return NULL;
+	//Give priority to the external allocation function to give the application a chance to manage it's own buffer allocations.
+	if( externalAllocFunc != NULL )
+		data = externalAllocFunc( size );
+	
+	if( data )
+	{
+		//Create a buffer and tell it to free it's data using the external free function. We've used the external
+		//allocator for allocation, so we need to use external deallocator for deallocation.
+		ret = av_buffer_create(data, size, av_buffer_external_free, NULL, 0);
+		if (!ret)
+			av_buffer_external_free( NULL, data );
+	}
+	else
+	{
+		//The external allocation function may return NULL for other reasons than out of memory, so
+		//if it did we will fall back to our own allocation function.
+		data = av_malloc(size);
+		if (!data)
+			return NULL; //We're out of memory after all.
 
-    ret = av_buffer_create(data, size, av_buffer_default_free, NULL, 0);
-    if (!ret)
-        av_freep(&data);
+		//We've created the buffer data ourselves so we can use our own free function.
+		ret = av_buffer_create(data, size, av_buffer_default_free, NULL, 0);
+		if (!ret)
+			av_freep(&data);
+	}
 
     return ret;
 }
