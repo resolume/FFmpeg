@@ -161,7 +161,7 @@ static int extract_extradata_h2645(AVBSFContext *ctx, AVPacket *pkt,
     ret = ff_h2645_packet_split(&s->h2645_pkt, pkt->data, pkt->size,
                                 ctx, 0, 0, ctx->par_in->codec_id, 1, 0);
     if (ret < 0)
-        goto fail;
+        return ret;
 
     for (i = 0; i < s->h2645_pkt.nb_nals; i++) {
         H2645NAL *nal = &s->h2645_pkt.nals[i];
